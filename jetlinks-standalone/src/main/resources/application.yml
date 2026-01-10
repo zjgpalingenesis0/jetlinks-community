@@ -297,6 +297,9 @@ springdoc:
                 - org.jetlinks.community.io.file.web
                 - org.hswebframework.web.authorization.basic.web
                 - org.jetlinks.community.logging.controller
+        -   group: OCR文字识别
+            packages-to-scan:
+                - org.jetlinks.community.ocr.web
     cache:
         disabled: false
 network:
