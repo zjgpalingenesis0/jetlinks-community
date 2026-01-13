@@ -29,6 +29,13 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- 认证管理组件（用于菜单初始化） -->
+        <dependency>
+            <groupId>org.jetlinks.community</groupId>
+            <artifactId>authentication-manager</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Spring WebFlux -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

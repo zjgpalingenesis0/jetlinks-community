@@ -41,4 +41,17 @@ public interface OcrService {
      * @return OCR识别结果
      */
     Mono<OcrResult> recognizeByFileId(String fileId);
+
+    /**
+     * 上传文件并进行OCR识别（整合接口）
+     * 该方法将在 OcrServiceImpl 中实现
+     *
+     * @param filePart 文件部分
+     * @param options OCR选项
+     * @return 包含文件信息和OCR识别结果的响应
+     */
+    reactor.core.publisher.Mono<org.jetlinks.community.ocr.model.OcrUploadResponse> uploadAndRecognize(
+        org.springframework.http.codec.multipart.FilePart filePart,
+        OcrRequest.OcrOptions options
+    );
 }

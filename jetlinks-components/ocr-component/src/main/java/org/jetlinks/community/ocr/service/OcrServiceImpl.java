@@ -22,12 +22,14 @@ import org.jetlinks.community.io.file.FileInfo;
 import org.jetlinks.community.ocr.OcrProperties;
 import org.jetlinks.community.ocr.model.OcrRequest;
 import org.jetlinks.community.ocr.model.OcrResult;
+import org.jetlinks.community.ocr.model.OcrUploadResponse;
 import org.jetlinks.community.ocr.provider.OcrProvider;
 import org.jetlinks.community.ocr.provider.baidu.BaiduOcrProvider;
 import org.hswebframework.web.exception.BusinessException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.http.codec.multipart.FilePart;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -238,5 +240,39 @@ public class OcrServiceImpl implements OcrService {
         }
 
         return optionMap;
+    }
+
+    @Override
+    public Mono<OcrUploadResponse> uploadAndRecognize(FilePart filePart, OcrRequest.OcrOptions options) {
+        // 验证文件参数
+        if (filePart == null) {
+            return Mono.just(OcrUploadResponse.error("文件不能为空"));
+        }
+
+        // 步骤1: 上传文件
+        return fileManager.saveFile(filePart, null)
+            .flatMap(fileInfo -> {
+                // 步骤2: 使用上传后的fileId进行OCR识别
+                return recognizeByFileId(fileInfo.getId(), options)
+                    .map(ocrResult -> {
+                        // 步骤3: 返回包含文件信息和OCR结果的响应
+                        return OcrUploadResponse.success(fileInfo, ocrResult);
+                    })
+                    .onErrorResume(error -> {
+                        // 如果OCR识别失败，仍然返回文件信息，但在ocrResult中标记错误
+                        log.warn("OCR识别失败: {}", error.getMessage());
+                        OcrResult errorResult = new OcrResult();
+                        errorResult.setFileId(fileInfo.getId());
+                        errorResult.setError("OCR识别失败: " + error.getMessage());
+                        return Mono.just(OcrUploadResponse.success(fileInfo, errorResult));
+                    });
+            })
+            .doOnSubscribe(subscription -> {
+                log.info("开始上传文件并进行OCR识别: filename={}", filePart.filename());
+            })
+            .onErrorResume(error -> {
+                log.error("上传文件失败: {}", error.getMessage());
+                return Mono.just(OcrUploadResponse.error("上传文件失败: " + error.getMessage()));
+            });
     }
 }

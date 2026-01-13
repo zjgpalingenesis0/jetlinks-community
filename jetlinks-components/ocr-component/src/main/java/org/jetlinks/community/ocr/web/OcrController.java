@@ -25,8 +25,10 @@ import org.hswebframework.web.exception.BusinessException;
 import org.jetlinks.community.ocr.model.OcrRequest;
 import org.jetlinks.community.ocr.model.OcrResponse;
 import org.jetlinks.community.ocr.model.OcrResult;
+import org.jetlinks.community.ocr.model.OcrUploadResponse;
 import org.jetlinks.community.ocr.service.OcrService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -79,5 +81,30 @@ public class OcrController {
         return ocrService.recognizeByFileId(fileId)
             .map(OcrResponse::success)
             .onErrorResume(e -> Mono.just(OcrResponse.error("OCR识别失败: " + e.getMessage())));
+    }
+
+    @PostMapping("/upload-and-recognize")
+    @Authorize
+    @ResourceAction(id = "upload-and-recognize", name = "上传并OCR识别")
+    @Operation(summary = "上传文件并进行OCR识别", description = "上传图片文件并立即进行OCR文字识别，返回文件信息和识别结果")
+    public Mono<OcrUploadResponse> uploadAndRecognize(
+        @RequestPart("file") Mono<FilePart> filePartMono,
+        @RequestParam(required = false) @Parameter(description = "OCR提供商") String provider,
+        @RequestParam(required = false) @Parameter(description = "是否检测方向") Boolean detectDirection,
+        @RequestParam(required = false) @Parameter(description = "识别语言") String language,
+        @RequestParam(required = false) @Parameter(description = "是否返回文字位置") Boolean returnTextPosition
+    ) {
+        return filePartMono.flatMap(filePart -> {
+            // 构建OCR选项
+            OcrRequest.OcrOptions options = OcrRequest.OcrOptions.builder()
+                .provider(provider)
+                .detectDirection(detectDirection)
+                .language(language)
+                .returnTextPosition(returnTextPosition)
+                .build();
+
+            // 调用服务层的整合方法
+            return ocrService.uploadAndRecognize(filePart, options);
+        });
     }
 }

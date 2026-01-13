@@ -59,6 +59,9 @@ public class OcrResult implements Serializable {
     @Schema(description = "平均置信度（0-1之间）")
     private Double averageConfidence;
 
+    @Schema(description = "错误信息（如果识别失败）")
+    private String error;
+
     /**
      * 判断识别结果是否有效
      *
